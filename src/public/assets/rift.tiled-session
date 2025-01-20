@@ -1,0 +1,33 @@
+{
+    "activeFile": "rift/rift.tmx",
+    "expandedProjectPaths": [
+    ],
+    "file.lastUsedOpenFilter": "All Files (*)",
+    "fileStates": {
+        "rift/TilesetFloor.tsx": {
+            "scaleInDock": 1
+        },
+        "rift/TilesetNature.tsx": {
+            "scaleInDock": 1
+        },
+        "rift/TilesetTowers.tsx": {
+            "scaleInDock": 1
+        },
+        "rift/rift.tmx": {
+            "scale": 0.37851562499999997,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 531.0216718266255,
+                "y": 531.0216718266255
+            }
+        }
+    },
+    "openFiles": [
+        "rift/rift.tmx"
+    ],
+    "project": "rift.tiled-project",
+    "property.type": "bool",
+    "recentFiles": [
+        "rift/rift.tmx"
+    ]
+}
