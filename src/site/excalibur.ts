@@ -1,5 +1,6 @@
 import * as ex from "excalibur";
-import { MainLevel, tiledMap } from "./MainLevel";
+import { MainLevel, riftTilemapResource } from "./MainLevel";
+import { Cavegirl2 } from "./Cavegirl2";
 
 export const Config = {
   BirdStartPos: ex.vec(200, 300),
@@ -30,7 +31,7 @@ export class Pipe extends ex.Actor {
   }
 }
 
-const loader = new ex.Loader([tiledMap]);
+const loader = new ex.Loader([riftTilemapResource, Cavegirl2.sprite]);
 
 export const game = new ex.Engine({
   width: 400,
