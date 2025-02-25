@@ -1,43 +1,13 @@
 import * as ex from "excalibur";
-
-type DirectionalAnim = {
-  up: ex.Animation;
-  down: ex.Animation;
-  left: ex.Animation;
-  right: ex.Animation;
-};
-
-export interface ChampionDef {
-  readonly spriteSheet: ex.SpriteSheet;
-
-  readonly animWalk: DirectionalAnim;
-  readonly animIdle: DirectionalAnim;
-  readonly animAttack: DirectionalAnim;
-
-  // skills
-}
-
-function directionalAnims(
-  spriteSheet: ex.SpriteSheet,
-  {
-    down,
-    up,
-    left,
-    right,
-  }: { down: number[]; up: number[]; left: number[]; right: number[] }
-) {
-  return {
-    down: ex.Animation.fromSpriteSheet(spriteSheet, down, 200),
-    up: ex.Animation.fromSpriteSheet(spriteSheet, up, 200),
-    left: ex.Animation.fromSpriteSheet(spriteSheet, left, 200),
-    right: ex.Animation.fromSpriteSheet(spriteSheet, right, 200),
-  };
-}
+import { ChampionDef } from "./ChampionDef";
+import { DirectionalAnim, directionalAnims } from "./DirectionalAnim";
 
 export class Cavegirl2 implements ChampionDef {
   static sprite = new ex.ImageSource(
     "assets/rift/Actor/Characters/Cavegirl2/SpriteSheet.png"
   );
+
+  readonly stats = { health: 100 };
 
   readonly spriteSheet = ex.SpriteSheet.fromImageSource({
     image: Cavegirl2.sprite,

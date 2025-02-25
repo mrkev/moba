@@ -1,4 +1,6 @@
 import * as ex from "excalibur";
+import { Player } from "./Player";
+import { Projectile } from "./Projectile";
 
 export class Turret extends ex.Actor {
   static readonly sprite = new ex.ImageSource(
@@ -36,7 +38,15 @@ export class Turret extends ex.Actor {
       collisionType: ex.CollisionType.Passive,
     });
 
-    actorWithCircleCollider.on("collisionstart", console.log);
+    actorWithCircleCollider.on("collisionstart", (e) => {
+      const actor = e.other.owner;
+      if (actor instanceof Player) {
+        console.log("HERE");
+        Projectile.shoot(this, actor.pos, { velocity: 100 });
+      } else {
+        console.log(e.other.owner);
+      }
+    });
 
     this.addChild(actorWithCircleCollider);
   }

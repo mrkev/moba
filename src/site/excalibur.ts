@@ -1,6 +1,6 @@
 import * as ex from "excalibur";
 import { MainLevel, riftTilemapResource } from "./MainLevel";
-import { Cavegirl2 } from "./Cavegirl2";
+import { Cavegirl2 } from "./champions/Cavegirl2";
 import { Turret } from "./Turret";
 
 export const Config = {

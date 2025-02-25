@@ -1,7 +1,7 @@
 import * as ex from "excalibur";
 import { Pipe } from "./excalibur";
 import { Ground } from "./Ground";
-import { ChampionDef } from "./Cavegirl2";
+import { ChampionDef } from "./champions/ChampionDef";
 
 type Dir = "left" | "right" | "up" | "down";
 
@@ -44,7 +44,7 @@ export class Player extends ex.Actor {
   // stats, move to championdef? here only getters that add stats?
   public attackPower = 10;
   public magicPower = 10;
-  public health = 10;
+  public health: number;
   public defence = 10;
   public abilityHaste = 10;
   public movementSpeed = 10;
@@ -62,6 +62,8 @@ export class Player extends ex.Actor {
       color: ex.Color.Yellow,
       collisionType: ex.CollisionType.Active,
     });
+
+    this.health = character.stats.health;
   }
 
   animWalk() {
@@ -116,6 +118,7 @@ export class Player extends ex.Actor {
   }
 
   recieveShot() {
-    console.log("got shot!");
+    this.health--;
+    console.log("got shot!", this.health);
   }
 }
