@@ -10,5 +10,8 @@ export interface ChampionDef {
   readonly animAttack: DirectionalAnim;
 
   // stats
-  readonly stats: Readonly<{ health: number }>;
+  readonly stats: Readonly<{
+    health: number;
+    movementSpeed: number;
+  }>;
 }

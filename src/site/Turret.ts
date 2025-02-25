@@ -17,6 +17,8 @@ export class Turret extends ex.Actor {
     },
   });
 
+  public magicPower = 10;
+
   constructor(readonly kind: "outer", pos: ex.Vector) {
     super({
       pos: pos,
@@ -42,7 +44,10 @@ export class Turret extends ex.Actor {
       const actor = e.other.owner;
       if (actor instanceof Player) {
         console.log("HERE");
-        Projectile.shoot(this, actor.pos, { velocity: 100 });
+        Projectile.shoot(this, actor.pos, {
+          velocity: 100,
+          damage: this.magicPower,
+        });
       } else {
         console.log(e.other.owner);
       }

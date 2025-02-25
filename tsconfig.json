@@ -22,5 +22,6 @@
     "noImplicitOverride": true
   },
   "include": ["src"],
+  "exclude": ["src/public"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

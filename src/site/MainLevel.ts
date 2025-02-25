@@ -112,7 +112,10 @@ export class MainLevel extends ex.Scene {
       if (e.button === ex.PointerButton.Left) {
         // this.mainPlayer
         console.log("move to", e.coordinates.worldPos);
-        Projectile.shoot(this.mainPlayer, e.worldPos, { velocity: 30 });
+        Projectile.shoot(this.mainPlayer, e.worldPos, {
+          velocity: 30,
+          damage: this.mainPlayer.magicPower,
+        });
       }
     });
 
@@ -120,23 +123,22 @@ export class MainLevel extends ex.Scene {
       const char = this.mainPlayer.character;
       switch (e.key) {
         case ex.Keys.Left:
-          this.mainPlayer.vel.x = -50;
+          this.mainPlayer.vel.x = -this.mainPlayer.movementSpeed;
           this.mainPlayer.facing = facing("left");
           this.mainPlayer.graphics.use(char.animWalk.left);
           break;
         case ex.Keys.Right:
-          this.mainPlayer.vel.x = 50;
+          this.mainPlayer.vel.x = this.mainPlayer.movementSpeed;
           this.mainPlayer.facing = facing("right");
           this.mainPlayer.graphics.use(char.animWalk.right);
-
           break;
         case ex.Keys.Up:
-          this.mainPlayer.vel.y = -50;
+          this.mainPlayer.vel.y = -this.mainPlayer.movementSpeed;
           this.mainPlayer.facing = facing("up");
           this.mainPlayer.graphics.use(char.animWalk.up);
           break;
         case ex.Keys.Down:
-          this.mainPlayer.vel.y = 50;
+          this.mainPlayer.vel.y = this.mainPlayer.movementSpeed;
           this.mainPlayer.facing = facing("down");
           this.mainPlayer.graphics.use(char.animWalk.down);
           break;

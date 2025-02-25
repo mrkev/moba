@@ -47,7 +47,7 @@ export class Player extends ex.Actor {
   public health: number;
   public defence = 10;
   public abilityHaste = 10;
-  public movementSpeed = 10;
+  public movementSpeed: number;
 
   public level = 0;
 
@@ -64,6 +64,7 @@ export class Player extends ex.Actor {
     });
 
     this.health = character.stats.health;
+    this.movementSpeed = character.stats.movementSpeed;
   }
 
   animWalk() {
@@ -117,8 +118,8 @@ export class Player extends ex.Actor {
     this.rotation = ex.vec(200, this.vel.y).toAngle();
   }
 
-  recieveShot() {
-    this.health--;
+  takeDamage(damage: number) {
+    this.health -= damage;
     console.log("got shot!", this.health);
   }
 }

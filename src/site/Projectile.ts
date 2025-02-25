@@ -9,6 +9,7 @@ export class Projectile extends ex.Actor {
     pos: ex.Vector,
     dir: number,
     velocity: number = Projectile.velocity,
+    readonly damage: number,
     readonly shooter?: ex.Actor
   ) {
     const vx = velocity * Math.cos(dir);
@@ -23,9 +24,22 @@ export class Projectile extends ex.Actor {
     }); // x, y, width, height
   }
 
-  static shoot(from: ex.Actor, to: ex.Vector, params: { velocity: number }) {
+  static shoot(
+    from: ex.Actor,
+    to: ex.Vector,
+    params: {
+      velocity: number;
+      damage: number;
+    }
+  ) {
     const dir = calculateAngle(from.pos, to);
-    const projectile = new Projectile(from.pos, dir, params.velocity, from);
+    const projectile = new Projectile(
+      from.pos,
+      dir,
+      params.velocity,
+      params.damage,
+      from
+    );
 
     // todo: nullthrows?
     from.scene?.add(projectile);
@@ -44,7 +58,7 @@ export class Projectile extends ex.Actor {
     }
     console.log(other.owner, this.shooter);
     if (gotShot instanceof Player) {
-      gotShot.recieveShot();
+      gotShot.takeDamage(this.damage);
       this.kill();
     }
   }

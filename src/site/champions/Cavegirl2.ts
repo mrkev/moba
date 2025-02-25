@@ -7,7 +7,10 @@ export class Cavegirl2 implements ChampionDef {
     "assets/rift/Actor/Characters/Cavegirl2/SpriteSheet.png"
   );
 
-  readonly stats = { health: 100 };
+  readonly stats = {
+    health: 10,
+    movementSpeed: 50,
+  };
 
   readonly spriteSheet = ex.SpriteSheet.fromImageSource({
     image: Cavegirl2.sprite,
