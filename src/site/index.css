@@ -30,17 +30,23 @@ body {
   min-height: 100vh;
 }
 
+#reactRoot {
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
 html,
 body {
-    background-color: black;
-    margin: 0;
-    padding: 0;
-    height: 100%;
+  background-color: black;
+  margin: 0;
+  padding: 0;
+  height: 100%;
 }
 body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 h1 {

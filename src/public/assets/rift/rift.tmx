@@ -166,17 +166,17 @@
   </object>
  </objectgroup>
  <objectgroup id="2" name="structures">
-  <object id="12" gid="1104" x="288" y="96" width="32" height="32"/>
-  <object id="13" gid="1104" x="592" y="448" width="32" height="32"/>
-  <object id="14" gid="1104" x="928" y="752" width="32" height="32"/>
-  <object id="15" gid="1104" x="528" y="112" width="32" height="32"/>
-  <object id="16" gid="1104" x="656" y="352" width="32" height="32"/>
-  <object id="17" gid="1104" x="912" y="480" width="32" height="32"/>
-  <object id="18" gid="1083" x="928" y="320" width="32" height="32"/>
-  <object id="19" gid="1083" x="752" y="272" width="32" height="32"/>
-  <object id="20" gid="1083" x="704" y="96" width="32" height="32"/>
-  <object id="27" gid="1083" x="896" y="160" width="32" height="32"/>
-  <object id="28" gid="1083" x="864" y="128" width="32" height="32"/>
+  <object id="12" type="turret-outer" gid="1104" x="288" y="96" width="32" height="32"/>
+  <object id="13" type="turret-outer" gid="1104" x="592" y="448" width="32" height="32"/>
+  <object id="14" type="turret-outer" gid="1104" x="928" y="752" width="32" height="32"/>
+  <object id="15" type="turret-inner" gid="1104" x="528" y="112" width="32" height="32"/>
+  <object id="16" type="turret-inner" gid="1104" x="656" y="352" width="32" height="32"/>
+  <object id="17" type="turret-inner" gid="1104" x="912" y="480" width="32" height="32"/>
+  <object id="18" type="turret-base" gid="1083" x="928" y="320" width="32" height="32"/>
+  <object id="19" type="turret-base" gid="1083" x="752" y="272" width="32" height="32"/>
+  <object id="20" type="turret-base" gid="1083" x="704" y="96" width="32" height="32"/>
+  <object id="27" type="turret-nexus" gid="1083" x="896" y="160" width="32" height="32"/>
+  <object id="28" type="turret-nexus" gid="1083" x="864" y="128" width="32" height="32"/>
   <object id="29" gid="1095" x="48" y="320" width="32" height="32"/>
   <object id="30" gid="1095" x="80" y="592" width="32" height="32"/>
   <object id="31" gid="1095" x="336" y="704" width="32" height="32"/>

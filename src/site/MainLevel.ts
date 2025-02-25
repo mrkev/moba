@@ -2,6 +2,8 @@ import { FactoryProps, TiledResource } from "@excaliburjs/plugin-tiled";
 import * as ex from "excalibur";
 import { facing, Player } from "./Player";
 import { Cavegirl2 } from "./Cavegirl2";
+import { Turret } from "./Turret";
+import { calculateAngle } from "./utils";
 
 const cavegirl2Def = new Cavegirl2();
 
@@ -16,8 +18,40 @@ export const riftTilemapResource = new TiledResource("./assets/rift/rift.tmx", {
         cavegirl2Def
       );
     },
+    "turret-outer": (props: FactoryProps) => {
+      console.log(props.object);
+      return new Turret("outer", props.worldPos);
+    },
   },
 });
+
+export class SwordAttack extends ex.Actor {
+  constructor() {
+    super({
+      pos: ex.vec(0, 0),
+      color: ex.Color.Red,
+      width: 2,
+      height: 10,
+    });
+  }
+
+  override onInitialize(engine: ex.Engine): void {
+    const animation = new ex.Animation({
+      strategy: ex.AnimationStrategy.End,
+      frames: [
+        {
+          graphic: new ex.Rectangle({
+            color: ex.Color.Red,
+            width: 2,
+            height: 10,
+          }),
+          duration: 500,
+        },
+      ],
+    });
+    this.graphics.use(animation);
+  }
+}
 
 export class MainLevel extends ex.Scene {
   mainPlayer: Player = new Player({ pos: ex.vec(120, 120) }, cavegirl2Def);
@@ -25,6 +59,8 @@ export class MainLevel extends ex.Scene {
   override onInitialize(game: ex.Engine): void {
     riftTilemapResource.addToScene(this);
     this.add(this.mainPlayer);
+
+    // this.mainPlayer.addChild(new SwordAttack());
 
     game.currentScene.camera.strategy.lockToActor(this.mainPlayer);
     const firstLayer = riftTilemapResource.getTileLayers()[0];
@@ -72,6 +108,11 @@ export class MainLevel extends ex.Scene {
       if (e.button === ex.PointerButton.Right) {
         // this.mainPlayer
         console.log("move to", e.coordinates.worldPos);
+      }
+      if (e.button === ex.PointerButton.Left) {
+        // this.mainPlayer
+        console.log("move to", e.coordinates.worldPos);
+        Projectile.shoot(this.mainPlayer, e.worldPos, { velocity: 30 });
       }
     });
 
@@ -128,9 +169,14 @@ export class MainLevel extends ex.Scene {
 class Projectile extends ex.Actor {
   static velocity = 80;
 
-  constructor(pos: ex.Vector, dir: number) {
-    const vx = Projectile.velocity * Math.cos(dir);
-    const vy = Projectile.velocity * Math.sin(dir);
+  constructor(
+    pos: ex.Vector,
+    dir: number,
+    velocity: number = Projectile.velocity,
+    readonly shooter?: ex.Actor
+  ) {
+    const vx = velocity * Math.cos(dir);
+    const vy = velocity * Math.sin(dir);
 
     console.log("dir", dir, { vx, vy });
 
@@ -143,13 +189,30 @@ class Projectile extends ex.Actor {
     }); // x, y, width, height
   }
 
+  static shoot(from: ex.Actor, to: ex.Vector, params: { velocity: number }) {
+    const dir = calculateAngle(from.pos, to);
+    const projectile = new Projectile(from.pos, dir, params.velocity, from);
+
+    // todo: nullthrows?
+    from.scene?.add(projectile);
+  }
+
   override onCollisionStart(
     self: ex.Collider,
     other: ex.Collider,
     side: ex.Side,
     contact: ex.CollisionContact
   ): void {
-    console.log(other.owner);
+    const gotShot = other.owner;
+
+    if (gotShot === this.shooter) {
+      return;
+    }
+    console.log(other.owner, this.shooter);
+    if (gotShot instanceof Player) {
+      gotShot.recieveShot();
+      this.kill();
+    }
   }
 
   // Update method to move the projectile

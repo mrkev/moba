@@ -41,6 +41,16 @@ export function dirFacing(radians: number): Dir {
 export class Player extends ex.Actor {
   public facing = facing("down");
 
+  // stats, move to championdef? here only getters that add stats?
+  public attackPower = 10;
+  public magicPower = 10;
+  public health = 10;
+  public defence = 10;
+  public abilityHaste = 10;
+  public movementSpeed = 10;
+
+  public level = 0;
+
   constructor(
     { pos }: { pos: ex.Vector },
     public readonly character: ChampionDef
@@ -103,5 +113,9 @@ export class Player extends ex.Actor {
     this.vel.y = ex.clamp(this.vel.y, -500, 500);
     // The "speed" the bird will move relative to pipes
     this.rotation = ex.vec(200, this.vel.y).toAngle();
+  }
+
+  recieveShot() {
+    console.log("got shot!");
   }
 }
