@@ -91,7 +91,9 @@ export class MainLevel extends ex.Scene {
         case ex.Keys.R: {
           const projectile = new Projectile(
             this.mainPlayer.pos,
-            this.mainPlayer.facing
+            this.mainPlayer.facing,
+            Projectile.velocity,
+            10
           );
 
           this.add(projectile);
