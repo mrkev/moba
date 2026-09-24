@@ -1,6 +1,6 @@
 import * as ex from "excalibur";
-import { MainLevel, riftTilemapResource } from "./MainLevel";
 import { Cavegirl2 } from "./champions/Cavegirl2";
+import { riftTilemapResource } from "./MainLevel";
 import { Turret } from "./Turret";
 
 export const Config = {
@@ -32,25 +32,8 @@ export class Pipe extends ex.Actor {
   }
 }
 
-const loader = new ex.Loader([
+export const loader = new ex.Loader([
   riftTilemapResource,
   Cavegirl2.sprite,
   Turret.sprite,
 ]);
-
-export const game = new ex.Engine({
-  width: 400,
-  height: 500,
-  backgroundColor: ex.Color.fromHex("#54C0CA"),
-  pixelArt: true,
-  antialiasing: false,
-  // pixelRatio: 2,
-  resolution: { width: 200, height: 250 },
-  displayMode: ex.DisplayMode.FitScreen,
-  scenes: { Level: new MainLevel() },
-  pointerScope: ex.PointerScope.Canvas,
-});
-
-game.start(loader).then(async () => {
-  await game.goToScene("Level");
-});

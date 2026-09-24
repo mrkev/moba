@@ -31,6 +31,7 @@
     "netplayjs": "^0.4.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-router": "^7.6.2",
     "remixicon": "^4.6.0",
     "vite-plugin-dts": "^4.5.4",
     "vitest": "^3.2.2"
