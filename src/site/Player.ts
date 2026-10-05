@@ -27,13 +27,16 @@ export function facing(
   }
 }
 
+// exact diagonals resolve to left/right
 export function dirFacing(radians: number): Dir {
   const mpi4 = Math.PI / 4;
-  if (radians > mpi4 * 1 && radians < mpi4 * 3) {
+  const tau = Math.PI * 2;
+  const angle = ((radians % tau) + tau) % tau;
+  if (angle > mpi4 * 1 && angle < mpi4 * 3) {
     return "up";
-  } else if (radians > mpi4 * 3 && radians < mpi4 * 5) {
+  } else if (angle >= mpi4 * 3 && angle <= mpi4 * 5) {
     return "left";
-  } else if (radians > mpi4 * 5 && radians < mpi4 * 7) {
+  } else if (angle > mpi4 * 5 && angle < mpi4 * 7) {
     return "down";
   } else {
     return "right";
@@ -52,6 +55,9 @@ export class Player extends ex.Actor {
   public movementSpeed: number;
 
   public level = 0;
+
+  // ms left to keep showing the attack pose
+  private attackAnimTimeLeft = 0;
 
   private readonly anims: {
     walk: DirectionalAnim;
@@ -90,6 +96,25 @@ export class Player extends ex.Actor {
 
   animAttack() {
     this.graphics.use(this.anims.attack[dirFacing(this.facing)]);
+    this.attackAnimTimeLeft = 250;
+  }
+
+  // dir is in screen space (y down); a zero vector stands still
+  move(dir: ex.Vector) {
+    if (dir.x === 0 && dir.y === 0) {
+      this.vel = ex.vec(0, 0);
+      if (this.attackAnimTimeLeft <= 0) {
+        this.animIdle();
+      }
+      return;
+    }
+    this.vel = dir.normalize().scale(this.movementSpeed);
+    this.facing = Math.atan2(-dir.y, dir.x);
+    this.animWalk();
+  }
+
+  override onPreUpdate(_engine: ex.Engine, delta: number): void {
+    this.attackAnimTimeLeft -= delta;
   }
 
   override onInitialize(engine: ex.Engine): void {

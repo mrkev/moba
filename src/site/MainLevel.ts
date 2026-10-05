@@ -1,6 +1,6 @@
 import { FactoryProps, TiledResource } from "@excaliburjs/plugin-tiled";
 import * as ex from "excalibur";
-import { facing, Player } from "./Player";
+import { Player } from "./Player";
 import { Cavegirl2 } from "./champions/Cavegirl2";
 import { Turret } from "./Turret";
 import { Projectile } from "./Projectile";
@@ -121,44 +121,15 @@ export class MainLevel extends ex.Scene {
         });
       }
     });
+  }
 
-    game.input.keyboard.on("hold", (e) => {
-      switch (e.key) {
-        case ex.Keys.Left:
-          this.mainPlayer.vel.x = -this.mainPlayer.movementSpeed;
-          this.mainPlayer.facing = facing("left");
-          this.mainPlayer.animWalk();
-          break;
-        case ex.Keys.Right:
-          this.mainPlayer.vel.x = this.mainPlayer.movementSpeed;
-          this.mainPlayer.facing = facing("right");
-          this.mainPlayer.animWalk();
-          break;
-        case ex.Keys.Up:
-          this.mainPlayer.vel.y = -this.mainPlayer.movementSpeed;
-          this.mainPlayer.facing = facing("up");
-          this.mainPlayer.animWalk();
-          break;
-        case ex.Keys.Down:
-          this.mainPlayer.vel.y = this.mainPlayer.movementSpeed;
-          this.mainPlayer.facing = facing("down");
-          this.mainPlayer.animWalk();
-          break;
-        // case 189: // -
-        //   camStrat.target.right -= 10;
-        //   break;
-        // case 187: // =
-        //   camStrat.target.right += 10;
-        //   break;
-        default:
-        // console.log("Pressed", e.key);
-      }
-    });
-
-    game.input.keyboard.on("release", () => {
-      this.mainPlayer.vel.x = 0;
-      this.mainPlayer.vel.y = 0;
-      this.mainPlayer.animIdle();
-    });
+  override onPreUpdate(game: ex.Engine): void {
+    const keyboard = game.input.keyboard;
+    const dir = ex.vec(0, 0);
+    if (keyboard.isHeld(ex.Keys.Left)) dir.x -= 1;
+    if (keyboard.isHeld(ex.Keys.Right)) dir.x += 1;
+    if (keyboard.isHeld(ex.Keys.Up)) dir.y -= 1;
+    if (keyboard.isHeld(ex.Keys.Down)) dir.y += 1;
+    this.mainPlayer.move(dir);
   }
 }
