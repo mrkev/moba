@@ -20,6 +20,8 @@ import {
   StructureActor,
   UnitActor,
 } from "./view/actors";
+import { drawSimDebug } from "./view/debugDraw";
+import { computeHud, hudEqual, HudState } from "./view/hud";
 import { CHAMPION_SPRITES, MINION_SPRITES } from "./view/sprites";
 import { SIM_OBJECT_CLASSES, tiledMapData } from "./view/tiledMapData";
 
@@ -51,6 +53,8 @@ export class MainLevel extends ex.Scene {
     UnitActor | StructureActor
   >();
   private readonly projectileActors = new Map<EntityId, ProjectileActor>();
+  private hud: HudState | null = null;
+  private readonly hudListeners = new Set<() => void>();
   private readonly gameOverLabel = new ex.Label({
     text: "",
     pos: ex.vec(100, 110),
@@ -95,6 +99,11 @@ export class MainLevel extends ex.Scene {
       this.camera.strategy.limitCameraBounds(mapBounds);
     }
 
+    // Excalibur's own collider drawing shows the Tiled plugin's colliders,
+    // which nothing uses; drawSimDebug shows what the simulation collides with
+    game.debug.collider.showGeometry = false;
+    game.debug.tilemap.showColliderGeometry = false;
+
     // right-click is for moving, not the browser's menu
     game.canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
@@ -112,12 +121,12 @@ export class MainLevel extends ex.Scene {
         case ex.Keys.Q:
         case ex.Keys.W:
         case ex.Keys.E:
-        case ex.Keys.R: {
-          const champion = championOf(this.state, this.playerId);
-          if (champion) {
-            this.commands.push({ type: "skillshot", dir: champion.facing });
-          }
-        }
+        case ex.Keys.R:
+          this.castSkillshot();
+          break;
+        case ex.Keys.Backquote:
+          this.toggleDebug();
+          break;
       }
     });
 
@@ -158,6 +167,42 @@ export class MainLevel extends ex.Scene {
       this.accumulator -= TICK_MS;
     }
     this.syncView(events, elapsed);
+    if (game.isDebug) {
+      drawSimDebug(this.state, this.map);
+    }
+    this.updateHud();
+  }
+
+  // casts the skillshot in the direction the champion faces
+  castSkillshot() {
+    const champion = championOf(this.state, this.playerId);
+    if (champion) {
+      this.commands.push({ type: "skillshot", dir: champion.facing });
+    }
+  }
+
+  // shows hitboxes and other simulation internals
+  toggleDebug() {
+    this.engine.toggleDebug();
+    this.updateHud();
+  }
+
+  // For the React HUD, via useSyncExternalStore
+  readonly subscribe = (listener: () => void) => {
+    this.hudListeners.add(listener);
+    return () => {
+      this.hudListeners.delete(listener);
+    };
+  };
+
+  readonly getHud = (): HudState | null => this.hud;
+
+  private updateHud() {
+    const hud = computeHud(this.state, this.playerId, this.engine.isDebug);
+    if (!hudEqual(hud, this.hud)) {
+      this.hud = hud;
+      this.hudListeners.forEach((listener) => listener());
+    }
   }
 
   private relationTo(unit: Unit): Relation {

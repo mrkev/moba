@@ -2,11 +2,12 @@ import * as ex from "excalibur";
 import "./App.css";
 import { loader } from "./excalibur.ts";
 import { MainLevel } from "./MainLevel.ts";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PlayerHUD } from "./PlayerHUD.tsx";
 
 export function App() {
   const initRef = useRef(false);
+  const [level] = useState(() => new MainLevel());
 
   useEffect(() => {
     if (initRef.current) {
@@ -21,7 +22,7 @@ export function App() {
       // pixelRatio: 2,
       resolution: { width: 200, height: 250 },
       displayMode: ex.DisplayMode.FitScreen,
-      scenes: { Level: new MainLevel() },
+      scenes: { Level: level },
       pointerScope: ex.PointerScope.Canvas,
     });
 
@@ -29,11 +30,11 @@ export function App() {
       await game.goToScene("Level");
     });
     initRef.current = true;
-  }, []);
+  }, [level]);
 
   return (
     <>
-      <PlayerHUD />
+      <PlayerHUD level={level} />
     </>
   );
 }

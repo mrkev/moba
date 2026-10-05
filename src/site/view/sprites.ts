@@ -47,6 +47,11 @@ export const CHAMPION_SPRITES: Record<ChampionName, CharacterSprites> = {
   cavegirl2: new CharacterSprites("Cavegirl2"),
 };
 
+// portraits for the HUD
+export const CHAMPION_FACESETS: Record<ChampionName, string> = {
+  cavegirl2: "assets/rift/Actor/Characters/Cavegirl2/Faceset.png",
+};
+
 export const MINION_SPRITES: Record<
   Team,
   Record<MinionType, CharacterSprites>

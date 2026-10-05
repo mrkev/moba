@@ -1,49 +1,85 @@
-import React from "react";
+import { useSyncExternalStore } from "react";
+import type { MainLevel } from "./MainLevel";
+import { CHAMPION_FACESETS } from "./view/sprites";
 
-export function PlayerHUD() {
+function formatTime(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+// keeps HUD buttons from taking focus, so Space/Enter don't re-press them
+function preventFocus(e: React.MouseEvent) {
+  e.preventDefault();
+}
+
+export function PlayerHUD({ level }: { level: MainLevel }) {
+  const hud = useSyncExternalStore(level.subscribe, level.getHud);
+  if (hud == null) {
+    return null;
+  }
+
+  const abilityReady = hud.abilityCooldown === 0 && !hud.dead;
+
   return (
-    <div style={{ display: "flex", flexDirection: "row" }}>
+    <div style={{ display: "flex", flexDirection: "row", gap: 4 }}>
       {/* stats */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr 2fr" }}>
-        {/* AD */}
-        <i className="ri-sword-fill"></i> 10
-        {/* HP */}
-        <i className="ri-heart-fill"></i> 10
-        {/* AP */}
-        <i className="ri-fire-fill"></i> 10
-        {/* DEF */}
-        <i className="ri-shield-fill"></i> 10
-        {/* SPEED */}
-        <i className="ri-run-fill"></i> 10
-        {/* Haste */}
-        <i className="ri-timer-flash-line"></i> 10
-        {/* <i className="ri-thunderstorms-fill"></i>
-        <i className="ri-bubble-chart-fill"></i>
-        <i className="ri-edit-circle-line"></i>
-        <i className="ri-dislike-fill"></i>
-        <i className="ri-mastercard-line"></i>
-        <i className="ri-bell-fill"></i> */}
+        <i className="ri-sword-fill" title="Attack damage"></i>{" "}
+        {hud.attackDamage}
+        <i className="ri-fire-fill" title="Ability power"></i>{" "}
+        {hud.abilityPower}
+        <i className="ri-shield-fill" title="Armor"></i> {hud.armor}
+        <i className="ri-run-fill" title="Move speed"></i> {hud.moveSpeed}
+        <i className="ri-timer-flash-line" title="Attacks per second"></i>{" "}
+        {hud.attackSpeed}
       </div>
       <div style={{ display: "flex", flexDirection: "column" }}>
         <div>
-          <button>Q</button>
-          <button>W</button>
-          <button>E</button>
-          <button>R</button>
+          {["Q", "W", "E", "R"].map((key) => (
+            <button
+              key={key}
+              disabled={!abilityReady}
+              onMouseDown={preventFocus}
+              onClick={() => level.castSkillshot()}
+              title={`Skillshot (${hud.abilityCooldownMax}s cooldown)`}
+            >
+              {hud.abilityCooldown > 0 ? hud.abilityCooldown.toFixed(1) : key}
+            </button>
+          ))}
         </div>
-        <progress max="100" value="70">
-          70%
+        <progress
+          max={hud.maxHp}
+          value={hud.hp}
+          title={`${hud.hp} / ${hud.maxHp}`}
+        >
+          {hud.hp} / {hud.maxHp}
         </progress>
-        <progress max="100" value="70">
-          70%
-        </progress>
+        <div style={{ fontSize: 12 }}>
+          <i className="ri-heart-fill"></i> {hud.hp} / {hud.maxHp}
+          {" · "}
+          {formatTime(hud.gameTime)}
+          {hud.dead && ` · respawning in ${hud.respawnIn}s`}
+        </div>
       </div>
       <img
-        src="assets/rift/Actor/Characters/Cavegirl2/Faceset.png"
+        src={CHAMPION_FACESETS[hud.champion]}
         width={64}
         height={64}
-        style={{ imageRendering: "pixelated" }}
+        style={{
+          imageRendering: "pixelated",
+          filter: hud.dead ? "grayscale(1)" : undefined,
+        }}
       />
+      <label style={{ fontSize: 12, alignSelf: "flex-start" }}>
+        <input
+          type="checkbox"
+          checked={hud.debug}
+          onMouseDown={preventFocus}
+          onChange={() => level.toggleDebug()}
+        />{" "}
+        Debug (`)
+      </label>
     </div>
   );
 }
