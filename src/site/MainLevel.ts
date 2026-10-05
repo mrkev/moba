@@ -160,12 +160,5 @@ export class MainLevel extends ex.Scene {
       this.mainPlayer.vel.y = 0;
       this.mainPlayer.animIdle();
     });
-
-    // this.ground = new Ground(ex.vec(0, engine.screen.drawHeight - 64));
-    // this.add(this.ground);
-    // const topPipe = new Pipe(ex.vec(engine.screen.drawWidth, 150), "top");
-    // this.add(topPipe);
-    // const bottomPipe = new Pipe(ex.vec(engine.screen.drawWidth, 300), "bottom");
-    // this.add(bottomPipe);
   }
 }

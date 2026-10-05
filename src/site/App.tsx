@@ -1,6 +1,5 @@
 import * as ex from "excalibur";
 import "./App.css";
-import "./excalibur.ts";
 import { loader } from "./excalibur.ts";
 import { MainLevel } from "./MainLevel.ts";
 import { useEffect, useMemo, useRef } from "react";
