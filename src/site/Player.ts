@@ -57,6 +57,11 @@ export class Player extends ex.Actor {
 
   public level = 0;
 
+  static respawnTime = 5000; // ms
+  public dead = false;
+  public spawnPos: ex.Vector;
+  private respawnTimeLeft = 0;
+
   // ms left to keep showing the attack pose
   private attackAnimTimeLeft = 0;
 
@@ -81,6 +86,7 @@ export class Player extends ex.Actor {
     });
 
     this.team = team;
+    this.spawnPos = pos.clone();
     this.health = character.stats.health;
     this.movementSpeed = character.stats.movementSpeed;
     this.anims = {
@@ -105,6 +111,9 @@ export class Player extends ex.Actor {
 
   // dir is in screen space (y down); a zero vector stands still
   move(dir: ex.Vector) {
+    if (this.dead) {
+      return;
+    }
     if (dir.x === 0 && dir.y === 0) {
       this.vel = ex.vec(0, 0);
       if (this.attackAnimTimeLeft <= 0) {
@@ -119,6 +128,12 @@ export class Player extends ex.Actor {
 
   override onPreUpdate(_engine: ex.Engine, delta: number): void {
     this.attackAnimTimeLeft -= delta;
+    if (this.dead) {
+      this.respawnTimeLeft -= delta;
+      if (this.respawnTimeLeft <= 0) {
+        this.respawn();
+      }
+    }
   }
 
   override onInitialize(engine: ex.Engine): void {
@@ -126,7 +141,32 @@ export class Player extends ex.Actor {
   }
 
   takeDamage(damage: number) {
-    this.health -= damage;
+    if (this.dead) {
+      return;
+    }
+    this.health = Math.max(0, this.health - damage);
     console.log("got shot!", this.health);
+    if (this.health === 0) {
+      this.die();
+    }
+  }
+
+  die() {
+    this.dead = true;
+    this.respawnTimeLeft = Player.respawnTime;
+    this.vel = ex.vec(0, 0);
+    this.graphics.isVisible = false;
+    this.body.collisionType = ex.CollisionType.PreventCollision;
+  }
+
+  respawn() {
+    this.dead = false;
+    this.health = this.character.stats.health;
+    this.pos = this.spawnPos.clone();
+    this.vel = ex.vec(0, 0);
+    this.facing = facing("down");
+    this.graphics.isVisible = true;
+    this.body.collisionType = ex.CollisionType.Active;
+    this.animIdle();
   }
 }

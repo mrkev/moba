@@ -59,7 +59,11 @@ export class Projectile extends ex.Actor {
   ): void {
     const gotShot = other.owner;
 
-    if (gotShot instanceof Player && gotShot.team !== this.shooter.team) {
+    if (
+      gotShot instanceof Player &&
+      !gotShot.dead &&
+      gotShot.team !== this.shooter.team
+    ) {
       gotShot.takeDamage(this.damage);
       this.kill();
     }

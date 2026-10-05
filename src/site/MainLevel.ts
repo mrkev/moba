@@ -17,10 +17,15 @@ export const riftTilemapResource = new TiledResource("./assets/rift/rift.tmx", {
       playerSpawn = props.worldPos;
       return undefined;
     },
-    "turret-outer": (props: FactoryProps) => {
-      // only the red side's turrets are typed in the map so far
-      return new Turret("outer", props.worldPos, "red");
-    },
+    // only the red side's turrets are typed in the map so far
+    "turret-outer": (props: FactoryProps) =>
+      new Turret("outer", props.worldPos, "red"),
+    "turret-inner": (props: FactoryProps) =>
+      new Turret("inner", props.worldPos, "red"),
+    "turret-base": (props: FactoryProps) =>
+      new Turret("base", props.worldPos, "red"),
+    "turret-nexus": (props: FactoryProps) =>
+      new Turret("nexus", props.worldPos, "red"),
   },
 });
 
@@ -60,7 +65,8 @@ export class MainLevel extends ex.Scene {
 
   override onInitialize(game: ex.Engine): void {
     riftTilemapResource.addToScene(this);
-    this.mainPlayer.pos = playerSpawn.clone();
+    this.mainPlayer.spawnPos = playerSpawn.clone();
+    this.mainPlayer.respawn();
     this.add(this.mainPlayer);
 
     // this.mainPlayer.addChild(new SwordAttack());
@@ -87,6 +93,9 @@ export class MainLevel extends ex.Scene {
     });
 
     game.input.keyboard.on("press", (e) => {
+      if (this.mainPlayer.dead) {
+        return;
+      }
       switch (e.key) {
         case ex.Keys.Q:
         case ex.Keys.W:
@@ -115,7 +124,7 @@ export class MainLevel extends ex.Scene {
         // this.mainPlayer
         console.log("move to", e.coordinates.worldPos);
       }
-      if (e.button === ex.PointerButton.Left) {
+      if (e.button === ex.PointerButton.Left && !this.mainPlayer.dead) {
         // this.mainPlayer
         console.log("move to", e.coordinates.worldPos);
         Projectile.shoot(this.mainPlayer, e.worldPos, {

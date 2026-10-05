@@ -3,6 +3,16 @@ import { Player } from "./Player";
 import { Projectile } from "./Projectile";
 import { Team } from "./Team";
 
+export type TurretKind = "outer" | "inner" | "base" | "nexus";
+
+// [column, row] in the towers sprite sheet
+const turretSprites: Record<TurretKind, [number, number]> = {
+  outer: [3, 2],
+  inner: [3, 2],
+  base: [6, 0],
+  nexus: [6, 0],
+};
+
 export class Turret extends ex.Actor {
   static readonly sprite = new ex.ImageSource(
     "assets/rift/Tilesets/TilesetTowers.png"
@@ -25,7 +35,7 @@ export class Turret extends ex.Actor {
   private cooldown = 0;
 
   constructor(
-    readonly kind: "outer",
+    readonly kind: TurretKind,
     pos: ex.Vector,
     readonly team: Team
   ) {
@@ -37,10 +47,7 @@ export class Turret extends ex.Actor {
       collisionType: ex.CollisionType.Fixed,
     });
 
-    switch (kind) {
-      case "outer":
-        this.graphics.use(Turret.spriteSheet.getSprite(3, 2));
-    }
+    this.graphics.use(Turret.spriteSheet.getSprite(...turretSprites[kind]));
 
     const rangeIndicator = new ex.Actor({ pos: ex.vec(0, 0) });
     rangeIndicator.graphics.use(
@@ -58,7 +65,11 @@ export class Turret extends ex.Actor {
     let target: Player | null = null;
     let targetDist = this.range;
     for (const actor of this.scene?.actors ?? []) {
-      if (!(actor instanceof Player) || actor.team === this.team) {
+      if (
+        !(actor instanceof Player) ||
+        actor.dead ||
+        actor.team === this.team
+      ) {
         continue;
       }
       const dist = actor.pos.distance(this.pos);
