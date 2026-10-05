@@ -93,7 +93,8 @@ export class MainLevel extends ex.Scene {
             this.mainPlayer.pos,
             this.mainPlayer.facing,
             Projectile.velocity,
-            10
+            10,
+            this.mainPlayer
           );
 
           this.add(projectile);
