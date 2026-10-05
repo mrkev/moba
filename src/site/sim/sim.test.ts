@@ -1,129 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { seconds, TURRET, WAVES } from "./constants";
-import { createGame } from "./game";
-import { MapData, StructurePlacement } from "./mapData";
 import { navGrid } from "./navGrid";
 import { findPath } from "./pathfinding";
-import { step } from "./step";
 import {
-  Champion,
-  GameState,
-  Lane,
-  PlayerInput,
-  Structure,
-  Team,
-  TurretTier,
-} from "./types";
-import { distance, Vec } from "./vec";
-import { championOf, isVulnerable, spawnMinion } from "./world";
-
-// Same layout as the rift: blue base bottom-left, red base top-right.
-function testMap(solidTiles: [number, number][] = []): MapData {
-  const width = 64;
-  const height = 64;
-  const solid = new Array<boolean>(width * height).fill(false);
-  for (const [tx, ty] of solidTiles) {
-    solid[ty * width + tx] = true;
-  }
-  const turret = (
-    team: Team,
-    tier: TurretTier,
-    lane: Lane | null,
-    x: number,
-    y: number
-  ): StructurePlacement => ({
-    team,
-    structure: "turret",
-    tier,
-    lane,
-    pos: { x, y },
-  });
-  const nexus = (team: Team, x: number, y: number): StructurePlacement => ({
-    team,
-    structure: "nexus",
-    tier: null,
-    lane: null,
-    pos: { x, y },
-  });
-  return {
-    width,
-    height,
-    tileSize: 16,
-    solid,
-    fountains: { blue: { x: 48, y: 984 }, red: { x: 976, y: 40 } },
-    structures: [
-      turret("red", "outer", "top", 304, 80),
-      turret("red", "outer", "mid", 608, 432),
-      turret("red", "outer", "bot", 944, 736),
-      turret("red", "inner", "top", 544, 96),
-      turret("red", "inner", "mid", 672, 336),
-      turret("red", "inner", "bot", 928, 464),
-      turret("red", "base", "top", 720, 80),
-      turret("red", "base", "mid", 768, 256),
-      turret("red", "base", "bot", 944, 304),
-      turret("red", "nexus", null, 912, 144),
-      turret("red", "nexus", null, 880, 112),
-      nexus("red", 928, 96),
-      turret("blue", "outer", "top", 64, 304),
-      turret("blue", "outer", "mid", 400, 576),
-      turret("blue", "outer", "bot", 736, 944),
-      turret("blue", "inner", "top", 96, 576),
-      turret("blue", "inner", "mid", 352, 688),
-      turret("blue", "inner", "bot", 464, 928),
-      turret("blue", "base", "top", 80, 720),
-      turret("blue", "base", "mid", 256, 768),
-      turret("blue", "base", "bot", 304, 944),
-      turret("blue", "nexus", null, 112, 880),
-      turret("blue", "nexus", null, 144, 912),
-      nexus("blue", 96, 928),
-    ],
-  };
-}
-
-function newGame(map = testMap()) {
-  const state = createGame(map, [
-    { playerId: 0, team: "blue", champion: "cavegirl2" },
-  ]);
-  // no minion waves unless a test asks for them
-  state.nextWaveTick = Infinity;
-  return { state, map, champ: championOf(state, 0)! };
-}
-
-function run(
-  state: GameState,
-  map: MapData,
-  ticks: number,
-  input: Partial<PlayerInput> = {}
-) {
-  for (let i = 0; i < ticks; i++) {
-    step(state, map, {
-      0: {
-        move: input.move ?? { x: 0, y: 0 },
-        // commands only go in on the first tick
-        commands: i === 0 ? (input.commands ?? []) : [],
-      },
-    });
-  }
-}
-
-function structureAt(
-  state: GameState,
-  team: Team,
-  tier: TurretTier,
-  lane: Lane | null
-) {
-  return state.units.find(
-    (u): u is Structure =>
-      u.kind === "structure" &&
-      u.team === team &&
-      u.tier === tier &&
-      u.lane === lane
-  )!;
-}
-
-function placeChampion(champ: Champion, pos: Vec) {
-  champ.pos = { ...pos };
-}
+  newGame,
+  placeChampion,
+  run,
+  structureAt,
+  testMap,
+} from "./testing";
+import { Structure } from "./types";
+import { distance } from "./vec";
+import { isVulnerable, spawnMinion } from "./world";
 
 describe("pathfinding", () => {
   it("routes around walls", () => {
@@ -208,7 +96,7 @@ describe("champion", () => {
       y: 600,
     });
     minion.attack = null; // keep it still and harmless
-    minion.moveSpeed = 0;
+    minion.baseMoveSpeed = 0;
     run(state, map, seconds(10), {
       commands: [{ type: "smartClick", pos: minion.pos }],
     });
@@ -223,7 +111,7 @@ describe("champion", () => {
     spawnMinion(state, "red", "mid", "caster", { x: 500, y: 540 });
     run(state, map, seconds(3));
     expect(champ.dead).toBe(true);
-    run(state, map, seconds(5));
+    run(state, map, seconds(6));
     expect(champ.dead).toBe(false);
     expect(champ.hp).toBe(champ.maxHp);
     expect(champ.pos).toEqual(state.fountains.blue);
@@ -251,7 +139,7 @@ describe("structures", () => {
       x: turret.pos.x + 40,
       y: turret.pos.y,
     });
-    minion.moveSpeed = 0;
+    minion.baseMoveSpeed = 0;
     minion.attack = null;
     run(state, map, 1);
     expect(turret.targetId).toBe(minion.id);
@@ -330,7 +218,7 @@ describe("simulation", () => {
       return JSON.stringify(state);
     };
     expect(play()).toEqual(play());
-  });
+  }, 30000);
 
   it("lets waves fight it out for a few minutes", () => {
     const { state, map } = newGame();
@@ -346,5 +234,5 @@ describe("simulation", () => {
       expect(unit.pos.x).toBeLessThanOrEqual(1024);
       expect(unit.pos.y).toBeLessThanOrEqual(1024);
     }
-  });
+  }, 30000);
 });

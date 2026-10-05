@@ -1,8 +1,10 @@
-import { CHAMPIONS, MINIONS } from "./constants";
+import { CHAMPIONS, ECONOMY, MINIONS } from "./constants";
+import { updateStats } from "./progression";
 import {
   Champion,
   EntityId,
   GameState,
+  INVENTORY_SIZE,
   Lane,
   Minion,
   MinionType,
@@ -114,7 +116,8 @@ export function spawnChampion(
   team: Team,
   champion: Champion["champion"]
 ): Champion {
-  const stats = CHAMPIONS[champion];
+  const def = CHAMPIONS[champion];
+  const ability = () => ({ rank: 0, cooldown: 0 });
   const unit: Champion = {
     kind: "champion",
     id: newId(state),
@@ -122,26 +125,45 @@ export function spawnChampion(
     playerId,
     team,
     pos: { ...state.fountains[team] },
-    radius: stats.radius,
-    hp: stats.maxHp,
-    maxHp: stats.maxHp,
-    armor: stats.armor,
-    attack: { ...stats.attack },
+    radius: def.radius,
+    // the rest of the stats are filled in by updateStats
+    hp: def.base.maxHp,
+    maxHp: def.base.maxHp,
+    mana: def.base.maxMana,
+    maxMana: def.base.maxMana,
+    armor: 0,
+    attack: null,
+    abilityPower: 0,
+    hpRegen: 0,
+    manaRegen: 0,
     attackCooldown: 0,
     targetId: null,
-    moveSpeed: stats.moveSpeed,
+    lastDamagedBy: null,
+    baseMoveSpeed: def.moveSpeed,
+    moveSpeed: def.moveSpeed,
+    effects: [],
     facing: { x: 0, y: 1 },
     moving: false,
     path: [],
     pathGoal: null,
     repathIn: 0,
-    abilityPower: stats.abilityPower,
     order: { type: "idle" },
-    abilityCooldown: 0,
+    level: 1,
+    xp: 0,
+    abilityPoints: 1,
+    abilities: { q: ability(), w: ability(), e: ability(), r: ability() },
+    gold: ECONOMY.startingGold,
+    items: new Array(INVENTORY_SIZE).fill(null),
+    dash: null,
+    recallLeft: null,
     dead: false,
     respawnIn: 0,
+    kills: 0,
+    deaths: 0,
+    creepScore: 0,
     lastHitChampionTick: -Infinity,
   };
+  updateStats(state, unit);
   state.units.push(unit);
   return unit;
 }
@@ -168,7 +190,10 @@ export function spawnMinion(
     attack: { ...stats.attack },
     attackCooldown: 0,
     targetId: null,
+    lastDamagedBy: null,
+    baseMoveSpeed: stats.moveSpeed,
     moveSpeed: stats.moveSpeed,
+    effects: [],
     facing: { x: 0, y: 1 },
     moving: false,
     path: [],

@@ -78,6 +78,16 @@ export function drawSimDebug(state: GameState, map: MapData) {
       ctx.drawCircle(pos, unit.radius, ex.Color.Transparent, color, 1);
     }
 
+    for (const zone of state.zones) {
+      ctx.drawCircle(
+        v(zone.pos),
+        zone.radius,
+        ex.Color.Transparent,
+        TEAM_COLORS[zone.team],
+        1
+      );
+    }
+
     for (const projectile of state.projectiles) {
       const radius = projectile.kind === "skillshot" ? projectile.radius : 1;
       ctx.drawCircle(

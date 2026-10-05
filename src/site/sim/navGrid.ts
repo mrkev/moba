@@ -118,18 +118,26 @@ export class NavGrid {
 }
 
 // Derived from state, so it isn't part of it; rebuilt when structures fall.
+// Structures are never added mid-game, so their count tells when that is.
 const cache = new WeakMap<
   GameState,
-  { map: MapData; structureKey: string; grid: NavGrid }
+  { map: MapData; structureCount: number; grid: NavGrid }
 >();
 
 export function navGrid(state: GameState, map: MapData): NavGrid {
-  const structures = state.units.filter((u) => u.kind === "structure");
-  const structureKey = structures.map((s) => s.id).join(",");
+  let structureCount = 0;
+  for (const unit of state.units) {
+    if (unit.kind === "structure") structureCount++;
+  }
   const cached = cache.get(state);
-  if (cached && cached.map === map && cached.structureKey === structureKey) {
+  if (
+    cached &&
+    cached.map === map &&
+    cached.structureCount === structureCount
+  ) {
     return cached.grid;
   }
+  const structures = state.units.filter((u) => u.kind === "structure");
 
   const blocked = new Uint8Array(map.width * map.height);
   map.solid.forEach((solid, i) => (blocked[i] = solid ? 1 : 0));
@@ -150,6 +158,6 @@ export function navGrid(state: GameState, map: MapData): NavGrid {
   }
 
   const grid = new NavGrid(map.width, map.height, ts, blocked);
-  cache.set(state, { map, structureKey, grid });
+  cache.set(state, { map, structureCount, grid });
   return grid;
 }

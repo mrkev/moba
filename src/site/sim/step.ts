@@ -1,12 +1,15 @@
 import { MapData } from "./mapData";
 import { separateUnits } from "./movement";
+import { updateStats } from "./progression";
 import {
+  passiveIncome,
   resolveDeaths,
   spawnWaves,
   updateChampion,
   updateMinion,
   updateProjectiles,
   updateStructure,
+  updateZones,
 } from "./systems";
 import { GameState, PlayerId, PlayerInput, SimEvent } from "./types";
 
@@ -30,9 +33,16 @@ export function step(
       unit.repathIn = Math.max(0, unit.repathIn - 1);
     }
     if (unit.kind === "champion") {
-      unit.abilityCooldown = Math.max(0, unit.abilityCooldown - 1);
+      for (const ability of Object.values(unit.abilities)) {
+        ability.cooldown = Math.max(0, ability.cooldown - 1);
+      }
+    }
+    if (unit.kind !== "structure") {
+      updateStats(state, unit);
     }
   }
+
+  passiveIncome(state);
 
   spawnWaves(state, map);
 
@@ -62,6 +72,7 @@ export function step(
 
   separateUnits(state, map);
   updateProjectiles(state);
+  updateZones(state, events);
   resolveDeaths(state, events);
   state.tick++;
   return events;

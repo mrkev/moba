@@ -71,6 +71,7 @@ export function createGame(map: MapData, players: PlayerSetup[]): GameState {
     nextId: 1,
     units: [],
     projectiles: [],
+    zones: [],
     nextWaveTick: WAVES.firstAt,
     lanePaths,
     fountains: {
@@ -97,6 +98,7 @@ export function createGame(map: MapData, players: PlayerSetup[]): GameState {
       attack: placement.structure === "turret" ? { ...TURRET.attack } : null,
       attackCooldown: 0,
       targetId: null,
+      lastDamagedBy: null,
     };
     state.units.push(structure);
   }

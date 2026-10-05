@@ -5,22 +5,28 @@ import {
   pickTarget,
   tryAttack,
 } from "./combat";
+import { addEffect, castAbility, levelAbility } from "./abilities";
 import {
+  championKillXp,
+  ECONOMY,
   FOUNTAIN_RADIUS,
   FOUNTAIN_REGEN,
   MINION_AGGRO_RANGE,
   MINION_LEASH_RANGE,
+  MINIONS,
   perTick,
-  RESPAWN_TIME,
-  SKILLSHOT,
+  RECALL_TIME,
+  respawnTime,
   TICK_RATE,
   WAVES,
   WAYPOINT_REACHED,
+  XP_RANGE,
 } from "./constants";
 import { nexusPos } from "./game";
 import { MapData } from "./mapData";
 import { moveInDirection, moveTowards, stopMoving } from "./movement";
 import { navGrid } from "./navGrid";
+import { buyItem, grantGold, grantXp, sellItem } from "./progression";
 import {
   Champion,
   enemyOf,
@@ -31,6 +37,7 @@ import {
   SimEvent,
   Structure,
   TEAMS,
+  Unit,
 } from "./types";
 import { add, distance, isZero, normalize, scale, sub } from "./vec";
 import {
@@ -38,7 +45,6 @@ import {
   edgeDistance,
   getUnit,
   isAlive,
-  newId,
   spawnMinion,
   unitAt,
 } from "./world";
@@ -55,23 +61,37 @@ export function updateChampion(
     if (champ.respawnIn <= 0) {
       champ.dead = false;
       champ.hp = champ.maxHp;
+      champ.mana = champ.maxMana;
       champ.pos = { ...state.fountains[champ.team] };
       champ.facing = { x: 0, y: 1 };
       champ.order = { type: "idle" };
+      champ.effects = [];
+    }
+    // the dead can still shop
+    for (const command of input.commands) {
+      if (command.type === "buy") buyItem(state, champ, command.item);
+      if (command.type === "sell") sellItem(state, champ, command.slot);
+      if (command.type === "levelAbility") levelAbility(champ, command.slot);
     }
     return;
   }
 
-  if (distance(champ.pos, state.fountains[champ.team]) <= FOUNTAIN_RADIUS) {
-    champ.hp = Math.min(
-      champ.maxHp,
-      champ.hp + (champ.maxHp * FOUNTAIN_REGEN) / TICK_RATE
-    );
-  }
+  const inFountain =
+    distance(champ.pos, state.fountains[champ.team]) <= FOUNTAIN_RADIUS;
+  const fountainRegen = inFountain ? FOUNTAIN_REGEN : 0;
+  champ.hp = Math.min(
+    champ.maxHp,
+    champ.hp + (champ.hpRegen + champ.maxHp * fountainRegen) / TICK_RATE
+  );
+  champ.mana = Math.min(
+    champ.maxMana,
+    champ.mana + (champ.manaRegen + champ.maxMana * fountainRegen) / TICK_RATE
+  );
 
   for (const command of input.commands) {
     switch (command.type) {
       case "smartClick": {
+        champ.recallLeft = null;
         const target = unitAt(state, command.pos, 4);
         if (target && target.team !== champ.team) {
           champ.order = { type: "attack", targetId: target.id };
@@ -83,35 +103,63 @@ export function updateChampion(
         champ.path = [];
         break;
       }
-      case "skillshot": {
-        if (champ.abilityCooldown > 0 || isZero(command.dir)) {
-          break;
-        }
-        const dir = normalize(command.dir);
-        champ.abilityCooldown = SKILLSHOT.cooldown;
-        champ.facing = dir;
-        state.projectiles.push({
-          kind: "skillshot",
-          id: newId(state),
-          team: champ.team,
-          sourceId: champ.id,
-          pos: { ...champ.pos },
-          speed: SKILLSHOT.speed,
-          damage: SKILLSHOT.baseDamage + SKILLSHOT.apRatio * champ.abilityPower,
-          dir,
-          radius: SKILLSHOT.radius,
-          distanceLeft: SKILLSHOT.range,
-        });
-        events.push({ type: "cast", sourceId: champ.id });
+      case "cast":
+        castAbility(state, map, champ, command.slot, command.target, events);
         break;
-      }
+      case "levelAbility":
+        levelAbility(champ, command.slot);
+        break;
+      case "recall":
+        if (champ.dash == null && champ.recallLeft == null) {
+          champ.recallLeft = RECALL_TIME;
+          champ.order = { type: "idle" };
+          stopMoving(champ);
+        }
+        break;
+      case "buy":
+        buyItem(state, champ, command.item);
+        break;
+      case "sell":
+        sellItem(state, champ, command.slot);
+        break;
     }
+  }
+
+  if (champ.dash) {
+    const dash = champ.dash;
+    const grid = navGrid(state, map);
+    const toGo = distance(champ.pos, dash.to);
+    const step = Math.min(toGo, perTick(dash.speed));
+    const next = grid.moveCircle(
+      champ.pos,
+      scale(normalize(sub(dash.to, champ.pos)), step),
+      champ.radius
+    );
+    const moved = distance(next, champ.pos);
+    champ.pos = next;
+    champ.moving = moved > 0;
+    // done once there, or when a wall stops it
+    if (moved < step * 0.5 || distance(champ.pos, dash.to) < 0.5) {
+      champ.dash = null;
+    }
+    return;
   }
 
   // direct movement overrides any order
   if (!isZero(input.move)) {
+    champ.recallLeft = null;
     champ.order = { type: "idle" };
     moveInDirection(state, map, champ, input.move);
+    return;
+  }
+
+  if (champ.recallLeft != null) {
+    champ.recallLeft--;
+    if (champ.recallLeft <= 0) {
+      champ.recallLeft = null;
+      champ.pos = { ...state.fountains[champ.team] };
+      events.push({ type: "recalled", unitId: champ.id });
+    }
     return;
   }
 
@@ -169,9 +217,14 @@ export function updateMinion(
   const candidate = pickTarget(state, minion, MINION_AGGRO_RANGE);
   if (
     target == null ||
+    // drop everything for champions attacking allied champions
     (candidate &&
       isChampionAggressor(state, candidate) &&
-      !isChampionAggressor(state, target))
+      !isChampionAggressor(state, target)) ||
+    // and go back to the minions once they stop
+    (target.kind === "champion" &&
+      !isChampionAggressor(state, target) &&
+      candidate?.kind !== "champion")
   ) {
     target = candidate;
   }
@@ -235,6 +288,7 @@ export function updateStructure(
 }
 
 export function updateProjectiles(state: GameState) {
+  const source = (id: number) => getUnit(state, id);
   state.projectiles = state.projectiles.filter((p) => {
     const step = perTick(p.speed);
     if (p.kind === "homing") {
@@ -266,11 +320,112 @@ export function updateProjectiles(state: GameState) {
       }
     }
     if (hit) {
-      applyDamage(state, getUnit(state, p.sourceId), hit, p.damage);
+      applyDamage(state, source(p.sourceId), hit, p.damage);
+      if (p.slow) {
+        addEffect(hit, {
+          kind: "slow",
+          amount: p.slow.amount,
+          until: state.tick + p.slow.duration,
+        });
+      }
       return false;
     }
     return p.distanceLeft > 0;
   });
+}
+
+export function updateZones(state: GameState, events: SimEvent[]) {
+  state.zones = state.zones.filter((zone) => {
+    if (state.tick < zone.detonateTick) {
+      return true;
+    }
+    const source = getUnit(state, zone.sourceId);
+    for (const unit of state.units) {
+      if (
+        unit.team !== zone.team &&
+        unit.kind !== "structure" &&
+        isAlive(unit) &&
+        distance(unit.pos, zone.pos) <= zone.radius + unit.radius
+      ) {
+        applyDamage(state, source, unit, zone.damage);
+      }
+    }
+    events.push({
+      type: "explosion",
+      pos: { ...zone.pos },
+      radius: zone.radius,
+      team: zone.team,
+    });
+    return false;
+  });
+}
+
+export function passiveIncome(state: GameState) {
+  if (state.tick < WAVES.firstAt) {
+    return;
+  }
+  for (const unit of state.units) {
+    if (unit.kind === "champion") {
+      unit.gold += ECONOMY.goldPerSecond / TICK_RATE;
+    }
+  }
+}
+
+// splits xp between the enemies of `dead` that are near it
+function shareXp(
+  state: GameState,
+  dead: Unit,
+  amount: number,
+  events: SimEvent[],
+  alwaysInclude: Champion | null
+) {
+  const earners = state.units.filter(
+    (u): u is Champion =>
+      u.kind === "champion" &&
+      u.team !== dead.team &&
+      !u.dead &&
+      (u === alwaysInclude || distance(u.pos, dead.pos) <= XP_RANGE)
+  );
+  for (const champ of earners) {
+    grantXp(state, champ, amount / earners.length, events);
+  }
+}
+
+function rewardDeath(state: GameState, unit: Unit, events: SimEvent[]) {
+  const killer = getUnit(state, unit.lastDamagedBy);
+  const killerChamp = killer?.kind === "champion" ? killer : null;
+  switch (unit.kind) {
+    case "minion": {
+      const stats = MINIONS[unit.minion];
+      if (killerChamp) {
+        killerChamp.creepScore++;
+        grantGold(killerChamp, stats.gold, unit.pos, events);
+      }
+      shareXp(state, unit, stats.xp, events, null);
+      break;
+    }
+    case "champion": {
+      unit.deaths++;
+      if (killerChamp) {
+        killerChamp.kills++;
+        grantGold(killerChamp, ECONOMY.championKill, unit.pos, events);
+        events.push({
+          type: "kill",
+          killerId: killerChamp.id,
+          victimId: unit.id,
+        });
+      }
+      shareXp(state, unit, championKillXp(unit.level), events, killerChamp);
+      break;
+    }
+    case "structure":
+      for (const champ of state.units) {
+        if (champ.kind === "champion" && champ.team !== unit.team) {
+          grantGold(champ, ECONOMY.structureKill, unit.pos, events);
+        }
+      }
+      break;
+  }
 }
 
 export function spawnWaves(state: GameState, map: MapData) {
@@ -308,15 +463,19 @@ export function resolveDeaths(state: GameState, events: SimEvent[]) {
     if (unit.kind === "champion") {
       if (!unit.dead) {
         unit.dead = true;
-        unit.respawnIn = RESPAWN_TIME;
+        unit.respawnIn = respawnTime(unit.level);
         unit.order = { type: "idle" };
         unit.targetId = null;
+        unit.dash = null;
+        unit.recallLeft = null;
         stopMoving(unit);
         events.push({ type: "death", unitId: unit.id });
+        rewardDeath(state, unit, events);
       }
       return true;
     }
     events.push({ type: "death", unitId: unit.id });
+    rewardDeath(state, unit, events);
     if (unit.kind === "structure" && unit.structure === "nexus") {
       state.winner = enemyOf(unit.team);
       events.push({ type: "victory", team: state.winner });

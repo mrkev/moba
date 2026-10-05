@@ -23,41 +23,101 @@ interface MobileStats extends UnitStats {
   moveSpeed: number;
 }
 
-export const CHAMPIONS: Record<
-  ChampionName,
-  MobileStats & { abilityPower: number }
-> = {
-  cavegirl2: {
+export interface ChampionStats {
+  maxHp: number;
+  maxMana: number;
+  armor: number;
+  attackDamage: number;
+  // attacks per second
+  attackSpeed: number;
+  hpRegen: number; // per second
+  manaRegen: number; // per second
+}
+
+export interface ChampionDef {
+  radius: number;
+  moveSpeed: number;
+  attackRange: number;
+  projectileSpeed: number | null;
+  base: ChampionStats;
+  // added per level past 1; attackSpeed is a fraction of the base
+  perLevel: ChampionStats;
+}
+
+const CAVE_PERSON: ChampionDef = {
+  radius: 6,
+  moveSpeed: 60,
+  attackRange: 48,
+  projectileSpeed: 220,
+  base: {
     maxHp: 600,
+    maxMana: 300,
     armor: 20,
-    radius: 6,
-    moveSpeed: 60,
-    abilityPower: 40,
-    attack: {
-      damage: 60,
-      range: 48,
-      interval: seconds(0.8),
-      projectileSpeed: 220,
-    },
+    attackDamage: 60,
+    attackSpeed: 0.75,
+    hpRegen: 1.5,
+    manaRegen: 2,
+  },
+  perLevel: {
+    maxHp: 90,
+    maxMana: 40,
+    armor: 3.5,
+    attackDamage: 3.5,
+    attackSpeed: 0.025,
+    hpRegen: 0.1,
+    manaRegen: 0.1,
   },
 };
 
-export const SKILLSHOT = {
-  baseDamage: 80,
-  // damage per point of ability power
-  apRatio: 1,
-  speed: 160,
-  range: 150,
-  radius: 3,
-  cooldown: seconds(1),
+export const CHAMPIONS: Record<ChampionName, ChampionDef> = {
+  cavegirl2: CAVE_PERSON,
+  caveman2: CAVE_PERSON,
 };
 
-export const MINIONS: Record<MinionType, MobileStats> = {
+export const MAX_LEVEL = 18;
+
+// xp needed to go from level to level + 1
+export function xpToNextLevel(level: number): number {
+  return 180 + 100 * level;
+}
+
+export function respawnTime(level: number): number {
+  return seconds(4 + level * 1.5);
+}
+
+// champions on the killer's team within this range of a death share its xp
+export const XP_RANGE = 120;
+
+export function championKillXp(victimLevel: number): number {
+  return 100 + 30 * (victimLevel - 1);
+}
+
+export const ECONOMY = {
+  startingGold: 500,
+  // passive income, starting with the first minion wave
+  goldPerSecond: 2,
+  championKill: 300,
+  // to every champion on the team that took the structure down
+  structureKill: 150,
+};
+
+// shopping (and selling) works this close to your own fountain, or while dead
+export const SHOP_RADIUS = 64;
+export const SELL_RATIO = 0.7;
+
+export const RECALL_TIME = seconds(4);
+
+export const MINIONS: Record<
+  MinionType,
+  MobileStats & { gold: number; xp: number }
+> = {
   melee: {
     maxHp: 300,
     armor: 0,
     radius: 5,
     moveSpeed: 40,
+    gold: 21,
+    xp: 60,
     attack: {
       damage: 12,
       range: 6,
@@ -70,6 +130,8 @@ export const MINIONS: Record<MinionType, MobileStats> = {
     armor: 0,
     radius: 5,
     moveSpeed: 40,
+    gold: 14,
+    xp: 30,
     attack: {
       damage: 23,
       range: 48,
@@ -117,9 +179,8 @@ export const WAVES = {
   ] as MinionType[],
 };
 
-export const RESPAWN_TIME = seconds(5);
 export const FOUNTAIN_RADIUS = 48;
-// fraction of max hp healed per second while in the fountain
+// fraction of max hp and mana restored per second while in the fountain
 export const FOUNTAIN_REGEN = 0.2;
 // how long a champion that hit an enemy champion stays a priority target
 export const CHAMPION_AGGRESSION_MEMORY = seconds(2);

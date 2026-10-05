@@ -21,12 +21,15 @@ export function scale(a: Vec, s: number): Vec {
   return { x: a.x * s, y: a.y * s };
 }
 
+// (Math.hypot is much slower, and this runs a lot)
 export function length(a: Vec): number {
-  return Math.hypot(a.x, a.y);
+  return Math.sqrt(a.x * a.x + a.y * a.y);
 }
 
 export function distance(a: Vec, b: Vec): number {
-  return Math.hypot(a.x - b.x, a.y - b.y);
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
 }
 
 export function normalize(a: Vec): Vec {

@@ -16,8 +16,15 @@ export function applyDamage(
     return;
   }
   target.hp = Math.max(0, target.hp - (amount * 100) / (100 + target.armor));
-  if (source?.kind === "champion" && target.kind === "champion") {
-    source.lastHitChampionTick = state.tick;
+  if (source) {
+    target.lastDamagedBy = source.id;
+  }
+  if (target.kind === "champion") {
+    // taking damage interrupts recalling
+    target.recallLeft = null;
+    if (source?.kind === "champion") {
+      source.lastHitChampionTick = state.tick;
+    }
   }
 }
 
@@ -92,11 +99,12 @@ export function pickTarget(
   let best: Unit | null = null;
   let bestKey: [number, number] = [Infinity, Infinity];
   for (const target of state.units) {
-    if (!canAttack(state, unit, target)) {
+    // cheap checks first; this runs for every unit, every tick
+    if (target.team === unit.team) {
       continue;
     }
     const dist = edgeDistance(unit, target);
-    if (dist > range) {
+    if (dist > range || !canAttack(state, unit, target)) {
       continue;
     }
     const key: [number, number] = [priority(target), dist];
