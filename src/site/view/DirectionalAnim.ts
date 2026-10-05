@@ -33,3 +33,14 @@ export function cloneDirectionalAnim(anim: DirectionalAnim): DirectionalAnim {
     right: anim.right.clone(),
   };
 }
+
+export type Dir = keyof DirectionalAnim;
+
+// Screen-space facing vector (y down) to the closest of the four directions;
+// exact diagonals resolve to left/right.
+export function dirOf(facing: { x: number; y: number }): Dir {
+  if (Math.abs(facing.x) >= Math.abs(facing.y)) {
+    return facing.x < 0 ? "left" : "right";
+  }
+  return facing.y < 0 ? "up" : "down";
+}
