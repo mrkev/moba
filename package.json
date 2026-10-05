@@ -21,7 +21,8 @@
     "build:site": "vite build -c vite.config.ts --emptyOutDir",
     "build:lib": "vite build -c vite.config.lib.ts",
     "lint": "eslint . --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
     "@excaliburjs/plugin-tiled": "0.32.0",
