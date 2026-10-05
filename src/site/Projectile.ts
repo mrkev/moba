@@ -5,6 +5,10 @@ import { calculateAngle } from "./utils";
 
 export class Projectile extends ex.Actor {
   static velocity = 80;
+  // how far a projectile travels before disappearing
+  static maxDistance = 150;
+
+  private readonly origin: ex.Vector;
 
   constructor(
     pos: ex.Vector,
@@ -23,6 +27,7 @@ export class Projectile extends ex.Actor {
       height: 3,
       color: ex.Color.Yellow,
     }); // x, y, width, height
+    this.origin = pos.clone();
   }
 
   static shoot(
@@ -60,19 +65,10 @@ export class Projectile extends ex.Actor {
     }
   }
 
-  // Update method to move the projectile
   override onPostUpdate(engine: ex.Engine, delta: number): void {
     super.onPostUpdate(engine, delta);
-
-    // todo: doesn't work, but should still add failsafe
-    // // If the projectile goes off-screen, we can remove it or destroy it
-    // if (
-    //   this.pos.x < 0 ||
-    //   this.pos.x > engine.drawWidth ||
-    //   this.pos.y < 0 ||
-    //   this.pos.y > engine.drawHeight
-    // ) {
-    //   this.kill(); // This will remove the projectile from the scene
-    // }
+    if (this.pos.distance(this.origin) > Projectile.maxDistance) {
+      this.kill();
+    }
   }
 }
