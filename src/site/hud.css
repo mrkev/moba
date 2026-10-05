@@ -324,3 +324,14 @@
   align-items: center;
   color: var(--text-dim);
 }
+
+.hud-minimap {
+  position: fixed;
+  bottom: 8px;
+  right: 8px;
+  width: 176px;
+  height: 176px;
+  padding: 0;
+  cursor: crosshair;
+  touch-action: none;
+}

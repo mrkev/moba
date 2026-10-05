@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import "./hud.css";
 import type { MainLevel } from "./MainLevel";
 import { ITEM_IDS, ITEMS, ItemStats } from "./sim/items";
@@ -159,6 +159,53 @@ function Shop({ hud, level }: { hud: HudState; level: MainLevel }) {
         </div>
       ))}
     </div>
+  );
+}
+
+const MINIMAP_SIZE = 176;
+
+// The scene draws into the canvas every frame; this handles the clicks.
+// Left-click (or drag) looks there, right-click moves there.
+function Minimap({ level }: { level: MainLevel }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    level.attachMinimap(canvasRef.current);
+    return () => level.attachMinimap(null);
+  }, [level]);
+  const fractions = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clamp = (n: number) => Math.min(1, Math.max(0, n));
+    return [
+      clamp((e.clientX - rect.left) / rect.width),
+      clamp((e.clientY - rect.top) / rect.height),
+    ] as const;
+  };
+  return (
+    <canvas
+      ref={canvasRef}
+      className="hud-panel hud-minimap"
+      width={MINIMAP_SIZE}
+      height={MINIMAP_SIZE}
+      onContextMenu={(e) => e.preventDefault()}
+      onPointerDown={(e) => {
+        if (e.button === 0) {
+          e.currentTarget.setPointerCapture(e.pointerId);
+          level.minimapPeek(...fractions(e));
+        } else if (e.button === 2) {
+          level.minimapMove(...fractions(e));
+        }
+      }}
+      onPointerMove={(e) => {
+        if (e.buttons & 1) {
+          level.minimapPeek(...fractions(e));
+        }
+      }}
+      onPointerUp={(e) => {
+        if (e.button === 0) {
+          level.minimapRelease();
+        }
+      }}
+    />
   );
 }
 
@@ -332,6 +379,7 @@ export function PlayerHUD({ level }: { level: MainLevel }) {
         </div>
       </div>
 
+      <Minimap level={level} />
       {hud.shopOpen && <Shop hud={hud} level={level} />}
       {hud.winner && <EndScreen hud={hud} level={level} />}
     </div>

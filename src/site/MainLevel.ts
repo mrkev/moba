@@ -30,6 +30,7 @@ import {
 } from "./view/actors";
 import { drawSimDebug } from "./view/debugDraw";
 import { computeHud, hudEqual, HudState } from "./view/hud";
+import { Minimap, renderMapImage } from "./view/minimap";
 import { CHAMPION_SPRITES, MINION_SPRITES } from "./view/sprites";
 import { SIM_OBJECT_CLASSES, tiledMapData } from "./view/tiledMapData";
 
@@ -76,27 +77,35 @@ export class MainLevel extends ex.Scene {
   private readonly zoneActors = new Map<EntityId, ZoneActor>();
   private hud: HudState | null = null;
   private readonly hudListeners = new Set<() => void>();
+  private mapBounds: ex.BoundingBox | null = null;
+  private minimap: Minimap | null = null;
+  private minimapCanvas: HTMLCanvasElement | null = null;
 
   override onInitialize(game: ex.Engine): void {
     // read before adding to the scene, which drops the sim's objects
     this.map = tiledMapData(riftTilemapResource);
     riftTilemapResource.addToScene(this);
+    const mapWidth =
+      riftTilemapResource.map.width * riftTilemapResource.map.tilewidth;
+    const mapHeight =
+      riftTilemapResource.map.height * riftTilemapResource.map.tileheight;
+    const firstLayer = riftTilemapResource.getTileLayers()[0];
+    this.mapBounds = ex.BoundingBox.fromDimension(
+      mapWidth,
+      mapHeight,
+      ex.Vector.Zero,
+      firstLayer?.tilemap.pos ?? ex.Vector.Zero
+    );
+    this.minimap = new Minimap(
+      renderMapImage(riftTilemapResource),
+      mapWidth,
+      mapHeight
+    );
     this.newGame();
 
     if (import.meta.env.DEV) {
       // for poking at the game from the devtools console
       (globalThis as { moba?: MainLevel }).moba = this;
-    }
-
-    const firstLayer = riftTilemapResource.getTileLayers()[0];
-    if (firstLayer) {
-      const mapBounds = ex.BoundingBox.fromDimension(
-        riftTilemapResource.map.width * riftTilemapResource.map.tilewidth,
-        riftTilemapResource.map.height * riftTilemapResource.map.tileheight,
-        ex.Vector.Zero,
-        firstLayer.tilemap.pos
-      );
-      this.camera.strategy.limitCameraBounds(mapBounds);
     }
 
     // Excalibur's own collider drawing shows the Tiled plugin's colliders,
@@ -175,11 +184,31 @@ export class MainLevel extends ex.Scene {
       { playerId: this.botPlayerId, team: "red", champion: "caveman2" },
     ]);
     this.syncView([], 0);
+    this.lockCamera();
+    this.updateHud();
+  }
+
+  // follows the player's champion, without showing past the map's edges
+  private lockCamera() {
+    this.camera.clearAllStrategies();
     const champion = this.ownChampionActor();
     if (champion) {
       this.camera.strategy.lockToActor(champion);
     }
-    this.updateHud();
+    if (this.mapBounds) {
+      this.camera.strategy.limitCameraBounds(this.mapBounds);
+    }
+  }
+
+  override onPostDraw(): void {
+    if (this.minimap && this.minimapCanvas) {
+      this.minimap.draw(
+        this.minimapCanvas,
+        this.state,
+        this.playerId,
+        this.camera.viewport
+      );
+    }
   }
 
   override onPreUpdate(game: ex.Engine, elapsed: number): void {
@@ -254,6 +283,38 @@ export class MainLevel extends ex.Scene {
 
   restart() {
     this.newGame();
+  }
+
+  // The minimap. Points on it are fractions of its width and height.
+
+  attachMinimap(canvas: HTMLCanvasElement | null) {
+    this.minimapCanvas = canvas;
+  }
+
+  // looks at a spot on the map until minimapRelease
+  minimapPeek(fx: number, fy: number) {
+    if (this.minimap == null) {
+      return;
+    }
+    this.camera.clearAllStrategies();
+    if (this.mapBounds) {
+      this.camera.strategy.limitCameraBounds(this.mapBounds);
+    }
+    const { x, y } = this.minimap.toWorld(fx, fy);
+    this.camera.pos = ex.vec(x, y);
+  }
+
+  minimapRelease() {
+    this.lockCamera();
+  }
+
+  minimapMove(fx: number, fy: number) {
+    if (this.minimap) {
+      this.commands.push({
+        type: "smartClick",
+        pos: this.minimap.toWorld(fx, fy),
+      });
+    }
   }
 
   // For the React HUD, via useSyncExternalStore
