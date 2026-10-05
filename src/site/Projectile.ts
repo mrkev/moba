@@ -1,5 +1,6 @@
 import * as ex from "excalibur";
 import { Player } from "./Player";
+import { HasTeam } from "./Team";
 import { calculateAngle } from "./utils";
 
 export class Projectile extends ex.Actor {
@@ -10,7 +11,7 @@ export class Projectile extends ex.Actor {
     dir: number,
     velocity: number = Projectile.velocity,
     readonly damage: number,
-    readonly shooter?: ex.Actor
+    readonly shooter: ex.Actor & HasTeam
   ) {
     const vx = velocity * Math.cos(dir);
     const vy = velocity * Math.sin(dir);
@@ -25,7 +26,7 @@ export class Projectile extends ex.Actor {
   }
 
   static shoot(
-    from: ex.Actor,
+    from: ex.Actor & HasTeam,
     to: ex.Vector,
     params: {
       velocity: number;
@@ -53,11 +54,7 @@ export class Projectile extends ex.Actor {
   ): void {
     const gotShot = other.owner;
 
-    if (gotShot === this.shooter) {
-      return;
-    }
-    console.log(other.owner, this.shooter);
-    if (gotShot instanceof Player) {
+    if (gotShot instanceof Player && gotShot.team !== this.shooter.team) {
       gotShot.takeDamage(this.damage);
       this.kill();
     }

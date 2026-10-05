@@ -1,6 +1,7 @@
 import * as ex from "excalibur";
 import { Player } from "./Player";
 import { Projectile } from "./Projectile";
+import { Team } from "./Team";
 
 export class Turret extends ex.Actor {
   static readonly sprite = new ex.ImageSource(
@@ -18,8 +19,16 @@ export class Turret extends ex.Actor {
   });
 
   public magicPower = 10;
+  public range = 50;
+  // ms between shots
+  public attackInterval = 1000;
+  private cooldown = 0;
 
-  constructor(readonly kind: "outer", pos: ex.Vector) {
+  constructor(
+    readonly kind: "outer",
+    pos: ex.Vector,
+    readonly team: Team
+  ) {
     super({
       pos: pos,
       width: 32,
@@ -33,26 +42,47 @@ export class Turret extends ex.Actor {
         this.graphics.use(Turret.spriteSheet.getSprite(3, 2));
     }
 
-    const actorWithCircleCollider = new ex.Actor({
-      pos: ex.vec(0, 0),
-      radius: 50,
-      color: ex.Color.Red,
-      collisionType: ex.CollisionType.Passive,
-    });
+    const rangeIndicator = new ex.Actor({ pos: ex.vec(0, 0) });
+    rangeIndicator.graphics.use(
+      new ex.Circle({
+        radius: this.range,
+        color: ex.Color.Transparent,
+        strokeColor: ex.Color.Red,
+        lineWidth: 1,
+      })
+    );
+    this.addChild(rangeIndicator);
+  }
 
-    actorWithCircleCollider.on("collisionstart", (e) => {
-      const actor = e.other.owner;
-      if (actor instanceof Player) {
-        console.log("HERE");
-        Projectile.shoot(this, actor.pos, {
-          velocity: 100,
-          damage: this.magicPower,
-        });
-      } else {
-        console.log(e.other.owner);
+  private findTarget(): Player | null {
+    let target: Player | null = null;
+    let targetDist = this.range;
+    for (const actor of this.scene?.actors ?? []) {
+      if (!(actor instanceof Player) || actor.team === this.team) {
+        continue;
       }
-    });
+      const dist = actor.pos.distance(this.pos);
+      if (dist <= targetDist) {
+        target = actor;
+        targetDist = dist;
+      }
+    }
+    return target;
+  }
 
-    this.addChild(actorWithCircleCollider);
+  override onPostUpdate(_engine: ex.Engine, delta: number): void {
+    this.cooldown = Math.max(0, this.cooldown - delta);
+    if (this.cooldown > 0) {
+      return;
+    }
+    const target = this.findTarget();
+    if (target == null) {
+      return;
+    }
+    Projectile.shoot(this, target.pos, {
+      velocity: 100,
+      damage: this.magicPower,
+    });
+    this.cooldown = this.attackInterval;
   }
 }

@@ -18,8 +18,8 @@ export const riftTilemapResource = new TiledResource("./assets/rift/rift.tmx", {
       return undefined;
     },
     "turret-outer": (props: FactoryProps) => {
-      console.log(props.object);
-      return new Turret("outer", props.worldPos);
+      // only the red side's turrets are typed in the map so far
+      return new Turret("outer", props.worldPos, "red");
     },
   },
 });
@@ -53,7 +53,10 @@ export class SwordAttack extends ex.Actor {
 }
 
 export class MainLevel extends ex.Scene {
-  mainPlayer: Player = new Player({ pos: ex.vec(0, 0) }, cavegirl2Def);
+  mainPlayer: Player = new Player(
+    { pos: ex.vec(0, 0), team: "blue" },
+    cavegirl2Def
+  );
 
   override onInitialize(game: ex.Engine): void {
     riftTilemapResource.addToScene(this);

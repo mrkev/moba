@@ -4,6 +4,7 @@ import {
   cloneDirectionalAnim,
   DirectionalAnim,
 } from "./champions/DirectionalAnim";
+import { Team } from "./Team";
 
 type Dir = "left" | "right" | "up" | "down";
 
@@ -65,8 +66,10 @@ export class Player extends ex.Actor {
     attack: DirectionalAnim;
   };
 
+  public readonly team: Team;
+
   constructor(
-    { pos }: { pos: ex.Vector },
+    { pos, team }: { pos: ex.Vector; team: Team },
     public readonly character: ChampionDef
   ) {
     super({
@@ -77,6 +80,7 @@ export class Player extends ex.Actor {
       collisionType: ex.CollisionType.Active,
     });
 
+    this.team = team;
     this.health = character.stats.health;
     this.movementSpeed = character.stats.movementSpeed;
     this.anims = {
