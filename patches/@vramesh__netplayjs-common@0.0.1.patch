@@ -1,0 +1,13 @@
+diff --git a/typedevent.ts b/typedevent.ts
+index 23ca5cb4692ae7dbbfb44534177bc8b31c7ea0e8..45b6c47b6620ce5c19c2df6cd910a493206cbe31 100644
+--- a/typedevent.ts
++++ b/typedevent.ts
+@@ -5,7 +5,7 @@ export interface Listener<T> {
+ }
+ 
+ export interface Disposable {
+-  dispose();
++  dispose(): void;
+ }
+ 
+ /** passes through events as they happen. You will not get events from before you start listening */

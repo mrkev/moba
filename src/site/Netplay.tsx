@@ -60,7 +60,7 @@ class SimpleGame extends Game {
   static canvasSize = { width: 600, height: 300 };
 }
 
-export function useInit(initFn: () => void) {
+function useInit(initFn: () => void) {
   const initRef = useRef(false);
 
   useEffect(() => {

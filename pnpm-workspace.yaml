@@ -1,2 +1,4 @@
 onlyBuiltDependencies:
   - esbuild
+patchedDependencies:
+  '@vramesh/netplayjs-common@0.0.1': patches/@vramesh__netplayjs-common@0.0.1.patch

@@ -1,54 +1,31 @@
-import { fixupConfigRules, fixupPluginRules } from "@eslint/compat";
-import { FlatCompat } from "@eslint/eslintrc";
-import { default as eslint } from "@eslint/js";
-import tsParser from "@typescript-eslint/parser";
+import { fixupConfigRules } from "@eslint/compat";
+import eslint from "@eslint/js";
+import { defineConfig, globalIgnores } from "eslint/config";
+import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import globals from "globals";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import tseslint from "typescript-eslint";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-  recommendedConfig: eslint.configs.recommended,
-  allConfig: eslint.configs.all,
-});
-
-export default tseslint.config(
+export default defineConfig(
+  globalIgnores(["dist", "docs", "src/public"]),
   eslint.configs.recommended,
-  ...tseslint.configs.recommended,
+  tseslint.configs.recommended,
+  // eslint-plugin-react doesn't support ESLint 10's context API yet
+  fixupConfigRules([
+    react.configs.flat.recommended,
+    react.configs.flat["jsx-runtime"],
+  ]),
+  reactHooks.configs.flat.recommended,
+  reactRefresh.configs.vite,
   {
-    ignores: ["dist", "docs", "eslint.config.mjs"],
-  },
-  ...fixupConfigRules(
-    compat.extends("plugin:react/recommended", "plugin:react/jsx-runtime")
-  ),
-  {
-    plugins: {
-      "react-hooks": fixupPluginRules(reactHooks),
-    },
-    rules: reactHooks.configs.recommended.rules,
-  },
-  {
-    plugins: {
-      "react-refresh": reactRefresh,
-    },
-
     languageOptions: {
       globals: {
         ...globals.browser,
       },
-
-      parser: tsParser,
-      ecmaVersion: "latest",
-      sourceType: "module",
-
       parserOptions: {
-        project: ["./tsconfig.json", "./tsconfig.node.json"],
-        tsconfigRootDir: __dirname,
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
       },
     },
 
@@ -68,5 +45,13 @@ export default tseslint.config(
         },
       ],
     },
-  }
+  },
+  {
+    files: ["*.config.{ts,mjs}"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
 );
