@@ -1,5 +1,9 @@
 import * as ex from "excalibur";
 import { ChampionDef } from "./champions/ChampionDef";
+import {
+  cloneDirectionalAnim,
+  DirectionalAnim,
+} from "./champions/DirectionalAnim";
 
 type Dir = "left" | "right" | "up" | "down";
 
@@ -49,6 +53,12 @@ export class Player extends ex.Actor {
 
   public level = 0;
 
+  private readonly anims: {
+    walk: DirectionalAnim;
+    idle: DirectionalAnim;
+    attack: DirectionalAnim;
+  };
+
   constructor(
     { pos }: { pos: ex.Vector },
     public readonly character: ChampionDef
@@ -63,22 +73,27 @@ export class Player extends ex.Actor {
 
     this.health = character.stats.health;
     this.movementSpeed = character.stats.movementSpeed;
+    this.anims = {
+      walk: cloneDirectionalAnim(character.animWalk),
+      idle: cloneDirectionalAnim(character.animIdle),
+      attack: cloneDirectionalAnim(character.animAttack),
+    };
   }
 
   animWalk() {
-    this.graphics.use(this.character.animWalk[dirFacing(this.facing)]);
+    this.graphics.use(this.anims.walk[dirFacing(this.facing)]);
   }
 
   animIdle() {
-    this.graphics.use(this.character.animIdle[dirFacing(this.facing)]);
+    this.graphics.use(this.anims.idle[dirFacing(this.facing)]);
   }
 
   animAttack() {
-    this.graphics.use(this.character.animAttack[dirFacing(this.facing)]);
+    this.graphics.use(this.anims.attack[dirFacing(this.facing)]);
   }
 
   override onInitialize(engine: ex.Engine): void {
-    this.graphics.use(this.character.animIdle.down);
+    this.animIdle();
   }
 
   takeDamage(damage: number) {

@@ -7,16 +7,15 @@ import { Projectile } from "./Projectile";
 
 const cavegirl2Def = new Cavegirl2();
 
+// set from the map's "player-start" object when the map is added to a scene
+let playerSpawn = ex.vec(120, 120);
+
 export const riftTilemapResource = new TiledResource("./assets/rift/rift.tmx", {
   useTilemapCameraStrategy: true,
   entityClassNameFactories: {
     "player-start": (props: FactoryProps) => {
-      return new Player(
-        {
-          pos: props.worldPos,
-        },
-        cavegirl2Def
-      );
+      playerSpawn = props.worldPos;
+      return undefined;
     },
     "turret-outer": (props: FactoryProps) => {
       console.log(props.object);
@@ -54,10 +53,11 @@ export class SwordAttack extends ex.Actor {
 }
 
 export class MainLevel extends ex.Scene {
-  mainPlayer: Player = new Player({ pos: ex.vec(120, 120) }, cavegirl2Def);
+  mainPlayer: Player = new Player({ pos: ex.vec(0, 0) }, cavegirl2Def);
 
   override onInitialize(game: ex.Engine): void {
     riftTilemapResource.addToScene(this);
+    this.mainPlayer.pos = playerSpawn.clone();
     this.add(this.mainPlayer);
 
     // this.mainPlayer.addChild(new SwordAttack());
@@ -123,27 +123,26 @@ export class MainLevel extends ex.Scene {
     });
 
     game.input.keyboard.on("hold", (e) => {
-      const char = this.mainPlayer.character;
       switch (e.key) {
         case ex.Keys.Left:
           this.mainPlayer.vel.x = -this.mainPlayer.movementSpeed;
           this.mainPlayer.facing = facing("left");
-          this.mainPlayer.graphics.use(char.animWalk.left);
+          this.mainPlayer.animWalk();
           break;
         case ex.Keys.Right:
           this.mainPlayer.vel.x = this.mainPlayer.movementSpeed;
           this.mainPlayer.facing = facing("right");
-          this.mainPlayer.graphics.use(char.animWalk.right);
+          this.mainPlayer.animWalk();
           break;
         case ex.Keys.Up:
           this.mainPlayer.vel.y = -this.mainPlayer.movementSpeed;
           this.mainPlayer.facing = facing("up");
-          this.mainPlayer.graphics.use(char.animWalk.up);
+          this.mainPlayer.animWalk();
           break;
         case ex.Keys.Down:
           this.mainPlayer.vel.y = this.mainPlayer.movementSpeed;
           this.mainPlayer.facing = facing("down");
-          this.mainPlayer.graphics.use(char.animWalk.down);
+          this.mainPlayer.animWalk();
           break;
         // case 189: // -
         //   camStrat.target.right -= 10;

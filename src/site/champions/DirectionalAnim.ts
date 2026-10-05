@@ -23,3 +23,13 @@ export function directionalAnims(
     right: ex.Animation.fromSpriteSheet(spriteSheet, right, 200),
   };
 }
+
+// Animations hold playback state, so each actor needs its own copy
+export function cloneDirectionalAnim(anim: DirectionalAnim): DirectionalAnim {
+  return {
+    down: anim.down.clone(),
+    up: anim.up.clone(),
+    left: anim.left.clone(),
+    right: anim.right.clone(),
+  };
+}
